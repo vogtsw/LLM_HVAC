@@ -1,0 +1,10 @@
+pandas
+langchain_community
+tiktoken
+langchain-openai
+langchainhub
+langchain
+chromadb
+openpyxl
+pypdf
+openai==1.66.2
