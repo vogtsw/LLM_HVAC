@@ -40,5 +40,5 @@ python model.py
 - 提交代码改进建议或 bug 报告。
 - 提供新的功能需求或想法。
 
-若你有任何问题或建议，欢迎在项目的 [GitHub Issues]([此处替换为你的 GitHub 项目 Issues 链接]) 中提出。
+若你有任何问题或建议，欢迎在项目的 [https://github.com/vogtsw/llm-building/issues] 中提出。
 
