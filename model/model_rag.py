@@ -1,8 +1,16 @@
 import os
 from openai import OpenAI
 import pandas as pd
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import Chroma
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from tqdm import tqdm
+from langchain.schema.runnable import RunnablePassthrough
+from langchain.prompts import PromptTemplate
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import StrOutputParser
 
-
+# openai or deepseek api
 os.environ["OPENAI_BASE_URL"] = ""
 os.environ["OPENAI_API_KEY"] = ""
 
@@ -10,9 +18,9 @@ client = OpenAI()
 
 
 excel_file = pd.ExcelFile('../data/set_temperature_22.xlsx')
-
 df = excel_file.parse('Sheet1')
 
+# 初始化字典来存储分组后的数据
 vars_dict = {}
 
 
@@ -25,7 +33,7 @@ for group_index in range(1, num_groups + 1):
     start_index = (group_index - 1) * 6
     end_index = start_index + 6
 
-
+    # 计算 Total_Energy
     total_energy = []
     for i in range(start_index, end_index):
         energy_sum = df.loc[i, 'Energy_1'] + df.loc[i, 'Energy_2'] + df.loc[i, 'Energy_3'] + df.loc[i, 'Energy_4'] + df.loc[i, 'Energy_5']
@@ -45,9 +53,80 @@ custom_prompt_1 = (
 """
 )
 
-client = OpenAI()
+
+file_path = '../data/rag.csv'
+data = pd.read_csv(file_path)
+
+
+def generate_sentence_english(row):
+    return f"At NTU, during the period {row['Date/Time']}, the outdoor temperature was {row['Environment Temperature']}°C. When the HVAC system was set to {row['Setting Temperature']}°C, the energy consumption during this period was {row['Electricity']} joules."
+
+
+data['Generated Sentence (English)'] = data.apply(generate_sentence_english, axis=1)
+
+
+output_file_path_english = '../result/modified_data_with_english_sentences.csv'
+data.to_csv(output_file_path_english, index=False)
+
+
+data_with_english = pd.read_csv(output_file_path_english)
+english_sentences = data_with_english['Generated Sentence (English)'].tolist()
+
+
+combined_text = " ".join(english_sentences)
+
+
+persist_directory = "embedding"
+
+
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+print("Splitting text into chunks...")
+splits = text_splitter.split_text(combined_text)
+
+
+if os.path.exists(persist_directory):
+
+    vectorstore = Chroma(persist_directory=persist_directory, embedding_function=OpenAIEmbeddings())
+else:
+
+    print("Embedding text...")
+    embeddings = OpenAIEmbeddings()
+    vectorstore = Chroma.from_texts(
+        texts=[text for text in tqdm(splits, desc="Embedding")],
+        embedding=embeddings,
+        persist_directory=persist_directory
+    )
+    vectorstore.persist()
+
+
+retriever = vectorstore.as_retriever()
+print("Retriever created.")
+
+
+prompt = PromptTemplate.from_template(
+    """
+{context}
+{question}
+"""
+)
+
+# LLM
+llm = ChatOpenAI(model_name="gpt-4o-mini-2024-07-18", temperature=0)
+
+# Post-processing
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+# RAG 链
+rag_chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
 temp_hour = []
-with open("../result/openai_setting22.txt", "w", encoding="utf-8") as file:
+with open("/kaggle/working/openai_setting22.txt", "w", encoding="utf-8") as file:
     for i in range(1, num_groups + 1):
         start_group = max(1, i - 4)
         end_group = min(num_groups, i)
@@ -74,17 +153,11 @@ with open("../result/openai_setting22.txt", "w", encoding="utf-8") as file:
 
                 params[f'Total_Energy_{j}'] = 0
 
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini-2024-07-18",
-            messages=[
-                {"role": "system", "content": "You are an AI assistant to a building operations manager in Singapore, responsible for optimizing the energy efficiency of the Heating, Ventilation, and Air Conditioning (HVAC) system while ensuring the comfort of the occupants."},
-                {"role": "user", "content": custom_prompt_1.format(**params)}
-            ]
-        )
-
-        respond = completion.choices[0].message
-        text = respond.content
+        formatted_prompt = custom_prompt_1.format(**params)
+        respond = rag_chain.invoke(formatted_prompt)
+        text = respond
         file.write(f"hour {i}————————————————————————————————————————————————————————————————\n")
+        file.write(text + "\n")
 
         print(text)
         print(f"hour {i}————————————————————————————————————————————————————————————————")
@@ -97,9 +170,4 @@ with open("../result/openai_setting22.txt", "w", encoding="utf-8") as file:
 
 print("最终的温度列表:", temp_hour)
 print("最终的温度列表长度:", len(temp_hour))
-
-
-
-
-
 
