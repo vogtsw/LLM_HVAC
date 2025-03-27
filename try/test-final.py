@@ -1,19 +1,15 @@
 import sys
-sys.path.append('../model')
+sys.path.append('../model')  # 将'model' 文件夹添加到系统路径
 
 from model import temp_hour  # 从 model.py 中导入 final_output 数组
-
-print(temp_hour)
+# from model_rag import temp_hour  # 从 model.py 中导入 final_output 数组
 
 
 from controllables.energyplus import (
     System,
-    # WeatherModel,
-    # Report,
     Actuator,
     OutputVariable,
 )
-
 
 from controllables.energyplus.events import Event
 
@@ -25,7 +21,6 @@ from controllables.core.tools.gymnasium import (
     Agent,
 )
 
-import gymnasium as _gymnasium_
 import numpy as _numpy_
 
 import os
@@ -39,7 +34,6 @@ class my_env():
     def __init__(self) -> None:
         self.world = world = System(
             building='Small office-1A-Long.idf',
-            # world='tmp_timestep 10 min.idf',
             weather='USA_FL_Miami.722020_TMY2.epw',
             repeat=False,
 
@@ -142,11 +136,7 @@ class my_env():
         ))
         self.data = []
         self.value = []
-
-        ################################################# 新增一个列表来存储需要依次读取的数字
         self.temp_values =temp_hour
-
-        #################################################
         self.current_index = 0
 
         @self.world.on(Event.Ref('end_zone_timestep_after_zone_reporting', include_warmup=False))
@@ -159,20 +149,11 @@ class my_env():
                     'Thermostat': self.p(),
 
                 }
-
-
-
             except TemporaryUnavailableError:
                 pass
-
-            # except Exception:
             #     # TODO
-            #     pass
-
             try:
-                # self.value.append(env.observe())
                 ddd = 1
-                # self.col = list(env.observe())
             except TemporaryUnavailableError:
                 pass
 
@@ -187,6 +168,7 @@ class my_env():
 a = my_env()
 a.world.start().wait()
 import pandas as pd
+
 
 try_folder = os.path.dirname(os.path.abspath(__file__))
 
@@ -209,5 +191,8 @@ out1.to_csv(out1_path)
 
 
 out2 = pd.DataFrame(value_to_save)
-out2_path = os.path.join(result_folder, 'result-openai-rag-15% test.csv')
+# out2_path = os.path.join(result_folder, 'result-gpt4o-15%-30day.csv')
+# out2_path = os.path.join(result_folder, 'result-gpt4o-17000-30day.csv')
+# out2_path = os.path.join(result_folder, 'result-gpt4o-rag-15%-30day.csv')
+# out2_path = os.path.join(result_folder, 'result-gpt4o-rag-15%-17000-30day.csv')
 out2.to_csv(out2_path)

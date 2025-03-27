@@ -17,10 +17,9 @@ os.environ["OPENAI_API_KEY"] = ""
 client = OpenAI()
 
 
-excel_file = pd.ExcelFile('../data/set_temperature_22.xlsx')
-df = excel_file.parse('Sheet1')
+df = pd.read_csv('../data/result-11-22.csv')
 
-# 初始化字典来存储分组后的数据
+
 vars_dict = {}
 
 
@@ -33,7 +32,7 @@ for group_index in range(1, num_groups + 1):
     start_index = (group_index - 1) * 6
     end_index = start_index + 6
 
-    # 计算 Total_Energy
+
     total_energy = []
     for i in range(start_index, end_index):
         energy_sum = df.loc[i, 'Energy_1'] + df.loc[i, 'Energy_2'] + df.loc[i, 'Energy_3'] + df.loc[i, 'Energy_4'] + df.loc[i, 'Energy_5']
@@ -49,7 +48,54 @@ for group_index in range(1, num_groups + 1):
 
 custom_prompt_1 = (
     """
+Building Information:
+The small office building has a total floor area of 511.16 m², with a net conditioned area of 511.16 m² and no unconditioned area, meaning 100% of the building is conditioned space. The HTML file doesn't explicitly state the number of zones or rooms, but DOE reference models usually structure a single - story small office with 3 zones per floor (like perimeter and core zones), and to get the exact zone breakdown, zone summary tables, IDF or input schema (such as .idf or .epJSON) are needed. The current HTML report lacks explicit information on wall or roof insulation levels (R/U - values), window - to - wall ratio (WWR), and glazing properties (U - value, SHGC), but since the simulation uses the DOE Reference Small Office for ASHRAE 169 - 2006 Climate Zone 1A (Miami), we can infer a WWR of ~33%, roof insulation of ~R - 20, wall insulation of ~R - 13, and double - pane, low - SHGC glazing suitable for hot - humid climates. The HTML file doesn't show thermal mass details (such as material types, density, heat capacity), yet we can infer internal heat gains from energy use. Over the simulation period, interior lighting gains are 5.36 GJ, interior equipment gains are 6.35 GJ, and fan (circulation heat) gains are 5.36 GJ. These internal heat gains significantly affect cooling loads and can be modulated in demand response control.
 
+Current Operational Data (each value represents the situation at 10 - minute intervals):
+You will be provided with 30 consecutive data points for various parameters.
+For outdoor temperature, you have t_out_1 to t_out_30: {t_out_1} {t_out_2}... {t_out_30}
+For equipment situation, Equip_1 to Equip_30: {Equip_1} {Equip_2}... {Equip_30}
+For building's lighting, light_1 to light_30: {light_1} {light_2}... {light_30}
+For occupancy ratio, occ_1 to occ_30: {occ_1} {occ_2}... {occ_30}
+Total energy consumption for each 10 - minute interval from Total_Energy_1 to Total_Energy_30: {Total_Energy_1} {Total_Energy_2}... {Total_Energy_30}
+The last 6 temperature setpoints are temperature_drybulb_25 to temperature_drybulb_30: {temperature_drybulb_25} {temperature_drybulb_26}... {temperature_drybulb_30}
+
+Task:
+Based on the above 30 - data - point information and your knowledge of HVAC systems, analyze the trends, especially focusing on the last 6 outdoor temperatures (t_out_25 to t_out_30), and set 6 recommended temperature values for the HVAC system within the current hour. The temperature goal is that compared to when the current temperature is set at the average of the last 6 temperature setpoints (average of temperature_drybulb_25 to temperature_drybulb_30), your recommended temperature values will reduce the building's total energy consumption by 15%.
+
+Output Format:
+temp_hour=[X.X X.X X.X X.X X.X X.X]
+(6 temperature values, at 10 - minute intervals, with one decimal place precision, values within the range of 22.0 - 29.0°C)
+
+Prohibited:
+Code blocks
+Explanatory text
+"""
+)
+
+custom_prompt_2 = (
+    """
+Building Information:
+The small office building has a total floor area of 511.16 m², with a net conditioned area of 511.16 m² and no unconditioned area, meaning 100% of the building is conditioned space. The HTML file doesn't explicitly state the number of zones or rooms, but DOE reference models usually structure a single - story small office with 3 zones per floor (like perimeter and core zones), and to get the exact zone breakdown, zone summary tables, IDF or input schema (such as .idf or .epJSON) are needed. The current HTML report lacks explicit information on wall or roof insulation levels (R/U - values), window - to - wall ratio (WWR), and glazing properties (U - value, SHGC), but since the simulation uses the DOE Reference Small Office for ASHRAE 169 - 2006 Climate Zone 1A (Miami), we can infer a WWR of ~33%, roof insulation of ~R - 20, wall insulation of ~R - 13, and double - pane, low - SHGC glazing suitable for hot - humid climates. The HTML file doesn't show thermal mass details (such as material types, density, heat capacity), yet we can infer internal heat gains from energy use. Over the simulation period, interior lighting gains are 5.36 GJ, interior equipment gains are 6.35 GJ, and fan (circulation heat) gains are 5.36 GJ. These internal heat gains significantly affect cooling loads and can be modulated in demand response control.
+
+Current Operational Data (each value represents the situation at 10 - minute intervals):
+You will be provided with 30 consecutive data points for various parameters.
+For outdoor temperature, you have t_out_1 to t_out_30: {t_out_1} {t_out_2}... {t_out_30}
+For equipment situation, Equip_1 to Equip_30: {Equip_1} {Equip_2}... {Equip_30}
+For building's lighting, light_1 to light_30: {light_1} {light_2}... {light_30}
+For occupancy ratio, occ_1 to occ_30: {occ_1} {occ_2}... {occ_30}
+Total energy consumption for each 10 - minute interval from Total_Energy_1 to Total_Energy_30: {Total_Energy_1} {Total_Energy_2}... {Total_Energy_30}
+The last 6 temperature setpoints are temperature_drybulb_25 to temperature_drybulb_30: {temperature_drybulb_25} {temperature_drybulb_26}... {temperature_drybulb_30}
+
+Task:
+Based on the above 30 - data - point information and your knowledge of HVAC systems, analyze the trends, especially focusing on the last 6 outdoor temperatures (t_out_25 to t_out_30), and set 6 recommended temperature values for the HVAC system within the current hour. The temperature goal is that compared to when the current temperature is set at the average of the last 6 temperature setpoints (average of temperature_drybulb_25 to temperature_drybulb_30), your recommended temperature values will let the building's total energy consumption close to 17000 each timer.
+Output Format:
+temp_hour=[X.X X.X X.X X.X X.X X.X]
+(6 temperature values, at 10 - minute intervals, with one decimal place precision, values within the range of 22.0 - 29.0°C)
+
+Prohibited:
+Code blocks
+Explanatory text
 """
 )
 
@@ -65,7 +111,7 @@ def generate_sentence_english(row):
 data['Generated Sentence (English)'] = data.apply(generate_sentence_english, axis=1)
 
 
-output_file_path_english = '../result/modified_data_with_english_sentences.csv'
+output_file_path_english = '/kaggle/working/modified_data_with_english_sentences.csv'
 data.to_csv(output_file_path_english, index=False)
 
 
@@ -74,7 +120,6 @@ english_sentences = data_with_english['Generated Sentence (English)'].tolist()
 
 
 combined_text = " ".join(english_sentences)
-
 
 persist_directory = "embedding"
 
@@ -98,7 +143,6 @@ else:
     )
     vectorstore.persist()
 
-
 retriever = vectorstore.as_retriever()
 print("Retriever created.")
 
@@ -117,7 +161,7 @@ llm = ChatOpenAI(model_name="gpt-4o-mini-2024-07-18", temperature=0)
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
-# RAG 链
+
 rag_chain = (
     {"context": retriever | format_docs, "question": RunnablePassthrough()}
     | prompt
