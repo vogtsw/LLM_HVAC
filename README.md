@@ -1,44 +1,25 @@
+# Project Introduction
+This project mainly focuses on the application of LLM (Large Language Model) in the HVAC (Heating, Ventilation, and Air Conditioning) field. The code has implemented a series of functions related to HVAC system analysis, model calling, etc. However, due to some environmental codes and data not being open-sourced, there are usage limitations.
 
-
-### 项目名称：大语言模型在建筑物HVAC系统上能耗控制的研究
-
-#### 项目简介
-本项目主要围绕 LLM（大语言模型）在 HVAC（暖通空调）领域的应用展开。代码实现了一系列与 HVAC 系统分析、模型调用等相关的功能，但部分环境代码和数据因未开源存在使用限制。
-
-
-#### 安装依赖
-项目依赖的 Python 包可以通过 `requirements.txt` 文件进行安装，在终端中执行以下命令：
+# Installation of Dependencies
+The Python packages that the project depends on can be installed through the `requirements.txt` file. Execute the following command in the terminal:
 ```bash
 pip install -r requirements.txt
 ```
 
+# Notes
+1. **Some Code Not Open-Sourced**: The relevant content in the `try` folder of the project cannot provide all the code directly because it is not open-sourced. If you have relevant requirements, you can contact the project maintainer for further consultation. Currently, interaction with EnergyPlus is not possible.
+2. **API Calling**: You can add your own API key for model calling. Find the position in the code where the API key needs to be entered, fill in your own valid API key, and then you can use the model calling function normally.
 
-#### 注意事项
-1. **部分代码未开源**：项目中 `try` 文件夹相关内容因未开源，无法直接提供全部代码。如果你有相关需求，可联系项目维护者进一步咨询。目前无法进行对energyplus的交互。
-2. **部分数据未开源**：`data` 文件夹中的部分数据涉及建筑物信息，出于保密原因未进行开源。若你有合适的使用场景和权限，可以自行准备相关数据进行替换。
-3. **API 调用**：你可以自己添加 API 密钥进行模型调用。在代码中找到需要输入 API 密钥的位置，将你自己的有效 API 密钥填入，即可正常使用模型调用功能。
-
-#### 代码使用说明
-
-
-本项目代码主要包含以下几个部分：
-- **数据处理模块**：负责读取和处理 `data` 文件夹中的数据。
-- **模型调用模块**：通过添加的 API 密钥调用大语言模型进行相关计算。
-- **结果展示模块**：将模型计算的结果进行可视化展示或保存到文件中。
-
-运行代码的步骤如下：
-1. 确保已经安装了所有依赖项。
-2. 添加有效的 API 密钥到代码中指定的位置。
-3. 打开终端，进入代码所在的目录。
-4. 运行主程序文件，例如：
+# Instructions for Using the Code
+The steps to run the code are as follows:
+1. Ensure that all dependencies have been installed.
+2. Add a valid API key to the specified position in the code.
+3. Open the terminal and navigate to the directory where the code is located.
+4. Perform tasks on the `prompt` in the `py` files of `model` or `model_rag`; and select whether to use RAG in the `import` statement in `test_final`.
+5. Run the main program file, for example:
 ```bash
-python model.py
+python test_final.py
 ```
 
-#### 贡献与反馈
-如果你对本项目感兴趣，可以通过以下方式进行贡献：
-- 提交代码改进建议或 bug 报告。
-- 提供新的功能需求或想法。
-
-若你有任何问题或建议，欢迎在项目的 [https://github.com/vogtsw/llm-building/issues] 中提出。
-
+# If you have any questions or suggestions, you are welcome to raise them in the [https://github.com/vogtsw/llm-building/issues](https://github.com/vogtsw/llm-building/issues) of the project. 
